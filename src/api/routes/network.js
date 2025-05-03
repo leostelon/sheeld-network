@@ -30,11 +30,20 @@ router.post("/join", async (req, res) => {
 router.get("/nearest-support-node", async (req, res) => {
 	try {
 		const nodes = getNodes();
-		// const node = nodes.find((n) =>  n.ip !== IP);
-		const node = nodes.find((n) => {
-			return n.ip === IP && n.networkPort !== 3000;
-		});
+		const node = nodes.find((n) => n.ip !== IP);
+		// const node = nodes.find((n) => {
+		// 	return n.ip === IP && n.networkPort !== 3002;
+		// });
 		res.send(node);
+	} catch (error) {
+		console.log(error);
+	}
+});
+
+router.get("/all-nodes", async (req, res) => {
+	try {
+		const nodes = getNodes();
+		res.send(nodes);
 	} catch (error) {
 		console.log(error);
 	}
