@@ -9,6 +9,9 @@ router.post("/join", async (req, res) => {
 			return res.status(400).send("Port or Ip missing for target node.");
 
 		let clientIp = req.socket.remoteAddress;
+		if (clientIp.startsWith("::ffff:")) {
+			clientIp = clientIp.slice(7);
+		}
 		const targetNode = {
 			ip,
 			networkPort,
