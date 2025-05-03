@@ -2,8 +2,8 @@
     "dev": [
         {
             "ip": "192.168.18.4",
-            "networkPort": 3005,
-            "apiPort": 3006,
+            "networkPort": 3000,
+            "apiPort": 3001,
             "joinedAt": "2025-04-26T10:15:30.000Z"
         }
     ],
