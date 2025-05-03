@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 const { NETWORK, IP, PORT } = require("../constants");
+const { trimAddress } = require("./address");
 const NODES_FILE = path.join("db/nodes.json");
 const BOOT_NODES_FILE = path.join("bootnodes.json");
 
@@ -53,21 +54,17 @@ async function connectToNetwork(port) {
 }
 
 async function fetchNodesFromBootNode(bootNodes, port) {
+	let ip = bootNodes.ip;
+	let parsedIp =
+		ip.startsWith("http://") || ip.startsWith("https://") ? ip : `http://${ip}`;
 	const response = await axios.post(
-		`${bootNodes.ip}:${bootNodes.apiPort}/network/join`,
+		`${parsedIp}:${bootNodes.apiPort}/network/join`,
 		{ port }
 	);
 	const data = response.data;
 	if (!data.nodes || data.nodes.length === 0)
 		throw new Error("No nodes returned from boot nodes.");
 	return data.nodes;
-}
-
-function trimAddress(address) {
-	return address
-		.replace("http://", "")
-		.replace("https://", "")
-		.replace(":", "");
 }
 
 function nodeExist(nodeList, node) {

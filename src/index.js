@@ -25,7 +25,7 @@ async function initializeServer() {
 	syncClientsDirectory();
 	await connectToNetwork(port);
 
-	socks5Server.listen(port, () => {
+	socks5Server.listen(port, "0.0.0.0", () => {
 		console.log("Node network running on port " + port);
 	});
 }
