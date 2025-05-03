@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
-const { NETWORK, IP } = require("../constants");
+const { NETWORK, IP, PORT } = require("../constants");
 const NODES_FILE = path.join("db/nodes.json");
 const BOOT_NODES_FILE = path.join("bootnodes.json");
 
