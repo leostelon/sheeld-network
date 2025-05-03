@@ -9,7 +9,6 @@ function addOrUpdateClientTarget(key, value) {
 
 	// Read and parse existing file
 	if (fs.existsSync(CLIENTS_FILE)) {
-		console.log(`Entry for '${key}' saved.`);
 		const existingData = fs.readFileSync(CLIENTS_FILE);
 		if (existingData.length !== 0) data = JSON.parse(existingData);
 	}
@@ -21,7 +20,6 @@ function addOrUpdateClientTarget(key, value) {
 
 	// Save updated data back to file
 	fs.writeFileSync(CLIENTS_FILE, JSON.stringify(data, null, 2));
-	console.log(`Entry for '${key}' saved.`);
 }
 
 // Get the value for a key
