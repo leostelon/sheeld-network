@@ -1,4 +1,5 @@
 const { IP } = require("../../constants");
+const { getCountryNameWithIp } = require("../../utils/geo");
 const { getNodes, saveNode } = require("../../utils/network");
 
 const router = require("express").Router();
@@ -12,12 +13,13 @@ router.post("/join", async (req, res) => {
 		if (IPv6Address.startsWith("::ffff:")) {
 			IPv6Address = IPv6Address.slice(7);
 		}
-		console.log(IPv6Address);
+		const country = getCountryNameWithIp(IPv6Address);
 		const newNode = {
 			ip: `${req.protocol}://${IPv6Address}`,
 			networkPort: port,
 			apiPort: port + 1,
 			joinedAt: Date.now(),
+			country,
 		};
 		saveNode(newNode);
 		const nodes = getNodes();
