@@ -44,3 +44,5 @@ function createDirectory() {
 		console.log("Directory already exists:", dirPath);
 	}
 }
+
+// curl -x socks5h://ELG3nKpAibgiRNDRZbVxugmjjBhN6w5bHywfsigQ7qsB:password@127.0.0.1:3000 http://httpforever.com

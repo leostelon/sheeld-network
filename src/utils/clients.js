@@ -4,7 +4,7 @@ let { CLIENT_DIR } = require("../constants");
 const CLIENTS_FILE = path.join("db/clients.json");
 
 // Add or update a key
-function addOrUpdateClientTarget(key, value) {
+function addOrUpdateClientTarget(key, targetNode) {
 	let data = {};
 
 	// Read and parse existing file
@@ -14,8 +14,13 @@ function addOrUpdateClientTarget(key, value) {
 	}
 
 	// Add or update the key
-	data[key] = value;
-	console.log(data);
+	data[key] = { ...data[key], ...targetNode };
+	if (!data[key]["usage"]) {
+		data[key]["usage"] = {
+			sent: 0,
+			received: 0,
+		};
+	}
 	updateClientDirectory(data);
 
 	// Save updated data back to file
@@ -50,8 +55,33 @@ function updateClientDirectory(data) {
 	CLIENT_DIR.clients = data;
 }
 
+function updateClientInboundUsage(clientIp, usage) {
+	const client = CLIENT_DIR.clients[clientIp];
+	client.usage.received += usage;
+	updateClient(clientIp, "usage", client.usage);
+}
+
+function updateClientOutboundUsage(clientIp, usage) {
+	const client = CLIENT_DIR.clients[clientIp];
+	client.usage.sent += usage;
+	updateClient(clientIp, "usage", client.usage);
+}
+
+function updateClient(clientIp, key, value) {
+	CLIENT_DIR.clients[clientIp][key] = value;
+	fs.writeFile(
+		CLIENTS_FILE,
+		JSON.stringify(CLIENT_DIR.clients, null, 2),
+		(err) => {
+			if (err) throw err;
+		}
+	);
+}
+
 module.exports = {
 	addOrUpdateClientTarget,
 	getClientTarget,
 	syncClientsDirectory,
+	updateClientInboundUsage,
+	updateClientOutboundUsage,
 };

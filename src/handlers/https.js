@@ -1,7 +1,11 @@
 const net = require("net");
 const { getNetDetails } = require("./utils/getNetDetails");
-const { CLIENT_DIR } = require("../constants");
+const { CLIENT_DIR, IP } = require("../constants");
 const { trimAddress } = require("../utils/address");
+const {
+	updateClientOutboundUsage,
+	updateClientInboundUsage,
+} = require("../utils/clients");
 
 // const UPSTREAM_PROXIES = { 3000: { host: "127.0.0.1", port: 3002 } };
 const AUTH_PASSWORD = "password";
@@ -90,14 +94,24 @@ async function handlePostAuthRequest(
 
 		console.log(`CONNECT to ${addr}:${port}`);
 
-		if (!UPSTREAM_PROXIES[remoteAddress]) {
+		if (
+			!UPSTREAM_PROXIES[remoteAddress] ||
+			UPSTREAM_PROXIES[remoteAddress].ip === IP
+		) {
 			const remoteSocket = net.connect(port, addr, () => {
 				// success reply
 				const reply = Buffer.from([0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0]);
 				clientSocket.write(reply);
 
-				remoteSocket.pipe(clientSocket);
-				clientSocket.pipe(remoteSocket);
+				remoteSocket.on("data", (data) => {
+					updateClientInboundUsage(remoteAddress, data.length);
+					clientSocket.write(data);
+				});
+
+				clientSocket.on("data", (data) => {
+					updateClientOutboundUsage(remoteAddress, data.length);
+					remoteSocket.write(data);
+				});
 			});
 
 			remoteSocket.on("error", (err) => {
@@ -228,17 +242,6 @@ function createSocks5Server() {
 		const remoteAddress = clientSocket.remoteAddress;
 		handleSocksRequest(clientSocket, remoteAddress);
 	});
-}
-
-async function wait(seconds, clientSocket) {
-	await new Promise((res, rej) =>
-		setTimeout(() => {
-			console.log("Wait over");
-			res(true);
-		}, seconds * 1000)
-	);
-
-	handleSocksRequest(clientSocket);
 }
 
 module.exports = { createSocks5Server };

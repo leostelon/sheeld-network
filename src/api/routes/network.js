@@ -32,11 +32,7 @@ router.get("/nearest-support-node", async (req, res) => {
 		const nodes = getNodes();
 		let node = nodes.find((n) => n.ip !== IP);
 		if (!node) {
-			if (nodes.length > 0) {
-				node = nodes[0];
-			} else {
-				res.status(500).send({ message: "No nodes found" });
-			}
+			res.status(500).send({ message: "No nodes found" });
 		}
 		console.log(node);
 		// const node = nodes.find((n) => {
