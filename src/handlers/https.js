@@ -244,9 +244,14 @@ function createSocks5Server() {
 
 		// Check for usage and expiration
 		const client = CLIENT_DIR.clients[remoteAddress];
-		if (!client.last_paid || isPaidPlanExpired(client.last_paid)) {
-			clientSocket.destroy();
-			return;
+		if (
+			client.usage.sent >= TEN_GIGA_BYTES ||
+			client.usage.received >= TEN_GIGA_BYTES
+		) {
+			if (!client.last_paid || isPaidPlanExpired(client.last_paid)) {
+				clientSocket.destroy();
+				return;
+			}
 		}
 
 		handleSocksRequest(clientSocket, remoteAddress);
