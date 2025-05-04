@@ -100,29 +100,16 @@ async function handlePostAuthRequest(
 			!UPSTREAM_PROXIES[remoteAddress] ||
 			UPSTREAM_PROXIES[remoteAddress].ip === IP
 		) {
-			// Check for usage and expiration
-			const client = CLIENT_DIR.clients[remoteAddress];
-			if (
-				client.usage.sent >= TEN_GIGA_BYTES ||
-				client.usage.received >= TEN_GIGA_BYTES
-			) {
-				if (!client.last_paid || isPaidPlanExpired(client.last_paid)) {
-					clientSocket.destroy();
-					return;
-				}
-			}
 			const remoteSocket = net.connect(port, addr, () => {
 				// success reply
 				const reply = Buffer.from([0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0]);
 				clientSocket.write(reply);
 
 				remoteSocket.on("data", (data) => {
-					updateClientInboundUsage(remoteAddress, data.length);
 					checkBalanceAndProcess(clientSocket, remoteAddress, data);
 				});
 
 				clientSocket.on("data", (data) => {
-					updateClientOutboundUsage(remoteAddress, data.length);
 					checkBalanceAndProcess(remoteSocket, remoteAddress, data);
 				});
 			});
@@ -229,6 +216,16 @@ async function chainToNextProxy(
 			const connectResp = await readOnce(upstream);
 			if (connectResp[1] !== 0x00) throw new Error("CONNECT failed");
 
+			// Count outbound bytes (client to upstream)
+			client.on("data", (data) => {
+				updateClientOutboundUsage(remoteAddress, data.length);
+			});
+
+			// Count inbound bytes (upstream to client)
+			upstream.on("data", (data) => {
+				updateClientInboundUsage(remoteAddress, data.length);
+			});
+
 			// Final proxy: success, begin piping
 			const successReply = Buffer.from([
 				0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0,
@@ -252,6 +249,19 @@ function createSocks5Server() {
 	return net.createServer((clientSocket) => {
 		console.log("New connection from", clientSocket.remoteAddress);
 		const remoteAddress = clientSocket.remoteAddress;
+
+		// Check for usage and expiration
+		const client = CLIENT_DIR.clients[remoteAddress];
+		if (
+			client &&
+			(client.usage.sent >= TEN_GIGA_BYTES ||
+				client.usage.received >= TEN_GIGA_BYTES)
+		) {
+			if (!client.last_paid || isPaidPlanExpired(client.last_paid)) {
+				clientSocket.destroy();
+				return;
+			}
+		}
 
 		handleSocksRequest(clientSocket, remoteAddress);
 	});
