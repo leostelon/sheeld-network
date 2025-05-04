@@ -8,6 +8,10 @@ router.post("/join", async (req, res) => {
 		if (!networkPort || !ip)
 			return res.status(400).send("Port or Ip missing for target node.");
 
+		const sol_address = req.body.sol_address;
+		if (!sol_address)
+			return res.status(400).send("Client Sol address is missing.");
+
 		let clientIp = req.socket.remoteAddress;
 		if (clientIp.startsWith("::ffff:")) {
 			clientIp = clientIp.slice(7);
@@ -15,6 +19,7 @@ router.post("/join", async (req, res) => {
 		const targetNode = {
 			ip,
 			networkPort,
+			sol_address,
 		};
 		addOrUpdateClientTarget(clientIp, targetNode);
 		res.send({ message: "OK" });

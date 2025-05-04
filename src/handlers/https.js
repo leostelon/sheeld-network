@@ -9,6 +9,8 @@ const {
 
 // const UPSTREAM_PROXIES = { 3000: { host: "127.0.0.1", port: 3002 } };
 const AUTH_PASSWORD = "password";
+// const TEN_GIGA_BYTES = 10 * 1024 ** 3;
+const TEN_GIGA_BYTES = 157286400;
 
 function readOnce(socket) {
 	return new Promise((resolve) => socket.once("data", resolve));
@@ -105,12 +107,12 @@ async function handlePostAuthRequest(
 
 				remoteSocket.on("data", (data) => {
 					updateClientInboundUsage(remoteAddress, data.length);
-					clientSocket.write(data);
+					checkBalanceAndProcess(clientSocket, remoteAddress, data);
 				});
 
 				clientSocket.on("data", (data) => {
 					updateClientOutboundUsage(remoteAddress, data.length);
-					remoteSocket.write(data);
+					checkBalanceAndProcess(remoteSocket, remoteAddress, data);
 				});
 			});
 
@@ -238,10 +240,39 @@ async function chainToNextProxy(
 function createSocks5Server() {
 	return net.createServer((clientSocket) => {
 		console.log("New connection from", clientSocket.remoteAddress);
-		// wait(3, clientSocket, port);
 		const remoteAddress = clientSocket.remoteAddress;
+
+		// Check for usage and expiration
+		const client = CLIENT_DIR.clients[remoteAddress];
+		if (!client.last_paid || isPaidPlanExpired(client.last_paid)) {
+			clientSocket.destroy();
+			return;
+		}
+
 		handleSocksRequest(clientSocket, remoteAddress);
 	});
 }
 
+function checkBalanceAndProcess(socket, userIpAddress, totalUsage, data) {
+	const client = CLIENT_DIR.clients[userIpAddress];
+	if (
+		client.usage.sent >= TEN_GIGA_BYTES ||
+		client.usage.received >= TEN_GIGA_BYTES
+	) {
+		if (!client.last_paid || isPaidPlanExpired(client.last_paid)) {
+			const reply = Buffer.from([0x05, 0x02, 0x00, 0x01, 0, 0, 0, 0, 0, 0]);
+			socket.end(reply);
+		}
+	} else {
+		socket.write(data);
+	}
+}
+
+function isPaidPlanExpired(lastPaid) {
+	const A = lastPaid; // timestamp in milliseconds
+
+	// Later, check if more than 30 days have passed
+	const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; // milliseconds in 30 days
+	return Date.now() > A + THIRTY_DAYS_MS; // true if more than 30 days passed
+}
 module.exports = { createSocks5Server };

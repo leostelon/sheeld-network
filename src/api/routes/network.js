@@ -34,7 +34,6 @@ router.get("/nearest-support-node", async (req, res) => {
 		if (!node) {
 			res.status(500).send({ message: "No nodes found" });
 		}
-		console.log(node);
 		// const node = nodes.find((n) => {
 		// 	return n.ip === IP && n.networkPort !== 3002;
 		// });
