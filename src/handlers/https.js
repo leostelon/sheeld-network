@@ -211,24 +211,33 @@ async function chainToNextProxy(
 			const connectResp = await readOnce(upstream);
 			if (connectResp[1] !== 0x00) throw new Error("CONNECT failed");
 
-			// Count outbound bytes (client to upstream)
-			client.on("data", (data) => {
-				updateClientOutboundUsage(remoteAddress, data.length);
-				checkBalanceAndProcess(upstream, remoteAddress, data);
-			});
-
-			// Count inbound bytes (upstream to client)
-			upstream.on("data", (data) => {
-				updateClientInboundUsage(remoteAddress, data.length);
-				checkBalanceAndProcess(client, remoteAddress, data);
-			});
-
-			// Final proxy: success, begin piping
+			// Final proxy: success, send success response to client
 			const successReply = Buffer.from([
 				0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0,
 			]);
 			client.write(successReply);
-			client.pipe(upstream).pipe(client);
+
+			// Track and forward outbound data (client → upstream)
+			client.on("data", (data) => {
+				updateClientOutboundUsage(remoteAddress, data.length);
+				if (checkBalance(remoteAddress)) {
+					upstream.write(data);
+				} else {
+					client.end();
+					upstream.end();
+				}
+			});
+
+			// Track and forward inbound data (upstream → client)
+			upstream.on("data", (data) => {
+				updateClientInboundUsage(remoteAddress, data.length);
+				if (checkBalance(remoteAddress)) {
+					client.write(data);
+				} else {
+					upstream.end();
+					client.end();
+				}
+			});
 		} catch (err) {
 			console.error(`Proxy error:`, err.message);
 			client.end();
@@ -264,19 +273,17 @@ function createSocks5Server() {
 	});
 }
 
-function checkBalanceAndProcess(socket, userIpAddress, data) {
+function checkBalance(userIpAddress) {
 	const client = CLIENT_DIR.clients[userIpAddress];
-	if (
+	if (!client) return false;
+
+	const overLimit =
 		client.usage.sent >= TEN_GIGA_BYTES ||
-		client.usage.received >= TEN_GIGA_BYTES
-	) {
-		if (!client.last_paid || isPaidPlanExpired(client.last_paid)) {
-			const reply = Buffer.from([0x05, 0x02, 0x00, 0x01, 0, 0, 0, 0, 0, 0]);
-			socket.end(reply);
-		}
-	} else {
-		socket.write(data);
-	}
+		client.usage.received >= TEN_GIGA_BYTES;
+
+	const planExpired = !client.last_paid || isPaidPlanExpired(client.last_paid);
+
+	return !(overLimit && planExpired);
 }
 
 function isPaidPlanExpired(lastPaid) {
