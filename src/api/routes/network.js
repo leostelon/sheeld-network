@@ -30,7 +30,15 @@ router.post("/join", async (req, res) => {
 router.get("/nearest-support-node", async (req, res) => {
 	try {
 		const nodes = getNodes();
-		const node = nodes.find((n) => n.ip !== IP);
+		let node = nodes.find((n) => n.ip !== IP);
+		if (!node) {
+			if (nodes.length > 0) {
+				node = nodes[0];
+			} else {
+				res.status(500).send({ message: "No nodes found" });
+			}
+		}
+		console.log(node);
 		// const node = nodes.find((n) => {
 		// 	return n.ip === IP && n.networkPort !== 3002;
 		// });
