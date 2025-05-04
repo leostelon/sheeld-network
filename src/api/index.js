@@ -29,8 +29,7 @@ app.use(function (req, res, next) {
 app.use(routes);
 
 // Start the server on default port 3001
-function startAPIServer(defaultPort) {
-	const port = defaultPort + 1;
+function startAPIServer(port) {
 	http.listen(port, () => {
 		console.log("API Server running on port " + port);
 	});

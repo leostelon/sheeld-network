@@ -7,9 +7,9 @@ const { createSocks5Server } = require("./handlers");
 const { startAPIServer } = require("./api");
 const { connectToNetwork } = require("./utils/network");
 const { syncClientsDirectory } = require("./utils/clients");
+const { PORT } = require("./constants");
 
 app.use(express.json());
-const port = getPort();
 
 // Handlers
 const socks5Server = createSocks5Server();
@@ -19,26 +19,20 @@ async function initializeServer() {
 	createDirectory();
 
 	// API Server
+	// Start API port +1 on network port
+	const port = parseInt(PORT) + 1;
 	startAPIServer(port);
 
 	// SYNC
 	syncClientsDirectory();
-	await connectToNetwork(port);
+	await connectToNetwork(PORT);
 
-	socks5Server.listen(port, "0.0.0.0", () => {
-		console.log("Node network running on port " + port);
+	socks5Server.listen(PORT, "0.0.0.0", () => {
+		console.log("Node network running on port " + PORT);
 	});
 }
 
 initializeServer();
-
-function getPort() {
-	var args = process.argv.slice(2);
-	if (!(args.length >= 1)) {
-		throw new Error("No port specified");
-	}
-	return parseInt(args[0]);
-}
 
 function createDirectory() {
 	const dirPath = path.join("db");
