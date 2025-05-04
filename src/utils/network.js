@@ -3,6 +3,7 @@ const path = require("path");
 const axios = require("axios");
 const { NETWORK, IP, PORT } = require("../constants");
 const { trimAddress } = require("./address");
+const { getCountryNameWithIp } = require("./geo");
 const NODES_FILE = path.join("db/nodes.json");
 const BOOT_NODES_FILE = path.join("bootnodes.json");
 
@@ -39,15 +40,17 @@ async function connectToNetwork(port) {
 
 	// If its a boot node, then just sync the DB
 	if (isABootNode) {
+		const location = getCountryNameWithIp(IP);
 		const currentNode = {
 			ip: IP,
 			networkPort: port,
 			apiPort: port + 1,
 			joinedAt: Date.now(),
+			location,
 		};
 		saveNode(currentNode);
 	} else {
-		const nodes = await fetchNodesFromBootNode(bootNodes[0], PORT);
+		const nodes = await fetchNodesFromBootNode(bootNodes[0], port);
 		saveNodes(nodes);
 	}
 	console.log("::::: SYNC COMPLETED :::::");

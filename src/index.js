@@ -20,12 +20,13 @@ async function initializeServer() {
 
 	// API Server
 	// Start API port +1 on network port
-	const port = parseInt(PORT) + 1;
-	startAPIServer(port);
+	const parsedPort = parseInt(PORT);
+	const networkPort = parsedPort + 1;
+	startAPIServer(networkPort);
 
 	// SYNC
 	syncClientsDirectory();
-	await connectToNetwork(port);
+	await connectToNetwork(parsedPort);
 
 	socks5Server.listen(PORT, "0.0.0.0", () => {
 		console.log("Node network running on port " + PORT);
