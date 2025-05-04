@@ -105,13 +105,8 @@ async function handlePostAuthRequest(
 				const reply = Buffer.from([0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0]);
 				clientSocket.write(reply);
 
-				remoteSocket.on("data", (data) => {
-					checkBalanceAndProcess(clientSocket, remoteAddress, data);
-				});
-
-				clientSocket.on("data", (data) => {
-					checkBalanceAndProcess(remoteSocket, remoteAddress, data);
-				});
+				clientSocket.pipe(remoteSocket);
+				remoteSocket.pipe(clientSocket);
 			});
 
 			remoteSocket.on("error", (err) => {
@@ -219,11 +214,13 @@ async function chainToNextProxy(
 			// Count outbound bytes (client to upstream)
 			client.on("data", (data) => {
 				updateClientOutboundUsage(remoteAddress, data.length);
+				checkBalanceAndProcess(upstream, remoteAddress, data);
 			});
 
 			// Count inbound bytes (upstream to client)
 			upstream.on("data", (data) => {
 				updateClientInboundUsage(remoteAddress, data.length);
+				checkBalanceAndProcess(client, remoteAddress, data);
 			});
 
 			// Final proxy: success, begin piping
@@ -267,7 +264,7 @@ function createSocks5Server() {
 	});
 }
 
-function checkBalanceAndProcess(socket, userIpAddress, totalUsage, data) {
+function checkBalanceAndProcess(socket, userIpAddress, data) {
 	const client = CLIENT_DIR.clients[userIpAddress];
 	if (
 		client.usage.sent >= TEN_GIGA_BYTES ||
