@@ -13,7 +13,6 @@ function initializeWebsocket(httpServer) {
 
 			socket.once("pong", () => {
 				const latency = Date.now() - start;
-				console.log(`Latency: ${latency}ms`);
 				socket.emit("latency", latency);
 			});
 		}, 1000);
