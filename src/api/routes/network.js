@@ -13,13 +13,13 @@ router.post("/join", async (req, res) => {
 		if (IPv6Address.startsWith("::ffff:")) {
 			IPv6Address = IPv6Address.slice(7);
 		}
-		const country = getCountryNameWithIp(IPv6Address);
+		const location = getCountryNameWithIp(IPv6Address);
 		const newNode = {
 			ip: `${req.protocol}://${IPv6Address}`,
 			networkPort: port,
 			apiPort: port + 1,
 			joinedAt: Date.now(),
-			country,
+			location,
 		};
 		saveNode(newNode);
 		const nodes = getNodes();
