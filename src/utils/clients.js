@@ -45,6 +45,16 @@ function getClients() {
 	return JSON.parse(data);
 }
 
+function getClientWithSolAddress(solAddress) {
+	const clients = getClients();
+	const ip = Object.keys(clients).find(
+		(ip) => clients[ip].sol_address === solAddress
+	);
+	if (!ip) return;
+	clients[ip].client_ip = ip;
+	return clients[ip];
+}
+
 function syncClientsDirectory() {
 	console.log("/// SYNCING CLIENTS STARTED ///");
 	CLIENT_DIR.clients = getClients();
@@ -67,6 +77,10 @@ function updateClientOutboundUsage(clientIp, usage) {
 	updateClient(clientIp, "usage", client.usage);
 }
 
+function updateClientLastPaid(clientIp, last_paid) {
+	updateClient(clientIp, "last_paid", last_paid);
+}
+
 function updateClient(clientIp, key, value) {
 	CLIENT_DIR.clients[clientIp][key] = value;
 	fs.writeFile(
@@ -84,4 +98,6 @@ module.exports = {
 	syncClientsDirectory,
 	updateClientInboundUsage,
 	updateClientOutboundUsage,
+	getClientWithSolAddress,
+	updateClientLastPaid,
 };
