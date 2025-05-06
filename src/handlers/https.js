@@ -287,7 +287,7 @@ function checkBalance(userIpAddress) {
 }
 
 function isPaidPlanExpired(lastPaid) {
-	const A = lastPaid; // timestamp in milliseconds
+	const A = lastPaid * 1000; // timestamp in milliseconds
 
 	// Later, check if more than 30 days have passed
 	const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; // milliseconds in 30 days
