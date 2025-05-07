@@ -9,7 +9,7 @@ const { IS_BOOT_NODE } = require("../../constants");
 router.use("/ping", ping);
 router.use("/network", network);
 router.use("/client", client);
-if (IS_BOOT_NODE) {
+if (IS_BOOT_NODE === "true") {
 	router.use("/webhook", webhook);
 }
 router.use("/wallet", wallet);

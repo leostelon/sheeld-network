@@ -34,8 +34,8 @@ router.post("/join", async (req, res) => {
 			networkPort,
 			sol_address,
 		};
-		if (!IS_BOOT_NODE) {
-			const last_paid = fetchAndClientLastPaid(req.body);
+		if (IS_BOOT_NODE === "false") {
+			const last_paid = fetchAndClientLastPaid(req.body.sol_address);
 			targetNode.last_paid = last_paid;
 		}
 		addOrUpdateClientTarget(clientIp, targetNode);
@@ -47,7 +47,7 @@ router.post("/join", async (req, res) => {
 
 router.get("/client/:sol_address", async (req, res) => {
 	try {
-		const sol_address = req.body.sol_address;
+		const sol_address = req.params.sol_address;
 		if (!sol_address)
 			return res.status(400).send("Client Sol address/signature is missing.");
 
