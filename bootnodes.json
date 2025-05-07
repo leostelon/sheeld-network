@@ -13,7 +13,8 @@
             "ip": "206.189.156.2",
             "networkPort": 3000,
             "apiPort": 3001,
-            "joinedAt": "2025-04-26T10:15:30.000Z"
+            "joinedAt": 1746596111000,
+            "location": "Singapore"
         }
     ]
 }
