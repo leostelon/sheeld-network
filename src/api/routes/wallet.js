@@ -17,11 +17,14 @@ router.post("/balance", async (req, res) => {
 				message: "No client found with provided wallet address",
 				balance: sol,
 				planExpired: true,
+				clientConnected: false,
 			});
 		console.log({ planExpired: isPaidPlanExpired(client.last_paid), sol });
-		res
-			.status(200)
-			.send({ balance: sol, planExpired: isPaidPlanExpired(client.last_paid) });
+		res.status(200).send({
+			balance: sol,
+			planExpired: isPaidPlanExpired(client.last_paid),
+			clientConnected: true,
+		});
 	} catch (error) {
 		console.log(error);
 	}
