@@ -78,4 +78,4 @@ function nodeExist(nodeList, node) {
 	);
 }
 
-module.exports = { connectToNetwork, saveNode, getNodes };
+module.exports = { connectToNetwork, saveNode, getNodes, getBootNodes };
