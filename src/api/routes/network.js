@@ -1,6 +1,6 @@
 const { IP } = require("../../constants");
 const { getCountryNameWithIp } = require("../../utils/geo");
-const { getNodes, saveNode } = require("../../utils/network");
+const { getNodes, saveNode, getBootNodes } = require("../../utils/network");
 
 const router = require("express").Router();
 
@@ -48,6 +48,15 @@ router.get("/nearest-support-node", async (req, res) => {
 router.get("/all-nodes", async (req, res) => {
 	try {
 		const nodes = getNodes();
+		res.send(nodes);
+	} catch (error) {
+		console.log(error);
+	}
+});
+
+router.get("/all-boot-nodes", async (req, res) => {
+	try {
+		const nodes = getBootNodes();
 		res.send(nodes);
 	} catch (error) {
 		console.log(error);
