@@ -24,6 +24,7 @@ router.post("/balance", async (req, res) => {
 });
 
 function isPaidPlanExpired(lastPaid) {
+	if (!lastPaid) return true;
 	const A = lastPaid * 1000; // timestamp in milliseconds
 
 	// Later, check if more than 30 days have passed
