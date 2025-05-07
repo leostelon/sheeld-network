@@ -13,8 +13,10 @@ router.post("/balance", async (req, res) => {
 		const sol = lamports / 1e9;
 		const client = getClientWithSolAddress(req.body.address);
 		if (!client)
-			return res.status(404).send({ message: "No client found with provided wallet address" });
-        console.log({ planExpired: isPaidPlanExpired(client.last_paid) });
+			return res
+				.status(404)
+				.send({ message: "No client found with provided wallet address" });
+		console.log({ planExpired: isPaidPlanExpired(client.last_paid), sol });
 		res
 			.status(200)
 			.send({ balance: sol, planExpired: isPaidPlanExpired(client.last_paid) });
