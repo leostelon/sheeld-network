@@ -35,7 +35,7 @@ router.post("/join", async (req, res) => {
 			sol_address,
 		};
 		if (IS_BOOT_NODE === "false") {
-			const last_paid = fetchAndClientLastPaid(req.body.sol_address);
+			const last_paid = await fetchAndClientLastPaid(req.body.sol_address);
 			targetNode.last_paid = last_paid;
 		}
 		addOrUpdateClientTarget(clientIp, targetNode);
@@ -45,7 +45,7 @@ router.post("/join", async (req, res) => {
 	}
 });
 
-router.get("/client/:sol_address", async (req, res) => {
+router.get("/:sol_address", async (req, res) => {
 	try {
 		const sol_address = req.params.sol_address;
 		if (!sol_address)
@@ -61,18 +61,24 @@ router.get("/client/:sol_address", async (req, res) => {
 });
 
 async function fetchAndClientLastPaid(sol_address) {
-	const bootNodes = getBootNodes();
-	const bootNode = bootNodes[0];
+	try {
+		const bootNodes = getBootNodes();
+		const bootNode = bootNodes[0];
 
-	let ip = bootNode.ip;
-	let parsedIp =
-		ip.startsWith("http://") || ip.startsWith("https://") ? ip : `http://${ip}`;
-	const response = await axios.get(
-		`${parsedIp}:${bootNode.apiPort}/client/${sol_address}`,
-		{ sol_address }
-	);
-	if (response.status === 404) return undefined;
-	return response.data.last_paid;
+		let ip = bootNode.ip;
+		let parsedIp =
+			ip.startsWith("http://") || ip.startsWith("https://")
+				? ip
+				: `http://${ip}`;
+		const response = await axios.get(
+			`${parsedIp}:${bootNode.apiPort}/client/${sol_address}`,
+			{ sol_address }
+		);
+		if (response.status === 404) return undefined;
+		return response.data.last_paid;
+	} catch (error) {
+		console.log(error)
+	}
 }
 
 module.exports = router;
