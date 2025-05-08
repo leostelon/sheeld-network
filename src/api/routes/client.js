@@ -1,4 +1,4 @@
-const { IS_BOOT_NODE } = require("../../constants");
+const { IS_BOOT_NODE, CLIENT_DIR } = require("../../constants");
 const {
 	addOrUpdateClientTarget,
 	getClientWithSolAddress,
@@ -45,6 +45,20 @@ router.post("/join", async (req, res) => {
 	}
 });
 
+router.get("/usage", async (req, res) => {
+	try {
+		const clients = CLIENT_DIR.clients;
+		let total = { inbound: 0, outbound: 0 };
+		Object.keys(clients).forEach((k) => {
+			total.inbound += clients[k].usage.sent;
+			total.outbound += clients[k].usage.received;
+		});
+		res.send(total);
+	} catch (error) {
+		console.log(error);
+	}
+});
+
 router.get("/:sol_address", async (req, res) => {
 	try {
 		const sol_address = req.params.sol_address;
@@ -77,7 +91,7 @@ async function fetchAndClientLastPaid(sol_address) {
 		if (response.status === 404) return undefined;
 		return response.data.last_paid;
 	} catch (error) {
-		console.log(error)
+		console.log(error);
 	}
 }
 
