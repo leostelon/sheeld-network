@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
-const { NETWORK, IP, PORT } = require("../constants");
+const { NETWORK, IP, PORT, SECRET } = require("../constants");
 const { trimAddress } = require("./address");
 const { getCountryNameWithIp } = require("./geo");
 const NODES_FILE = path.join("db/nodes.json");
@@ -62,7 +62,7 @@ async function fetchNodesFromBootNode(bootNodes, port) {
 		ip.startsWith("http://") || ip.startsWith("https://") ? ip : `http://${ip}`;
 	const response = await axios.post(
 		`${parsedIp}:${bootNodes.apiPort}/network/join`,
-		{ port }
+		{ port, secret: SECRET }
 	);
 	const data = response.data;
 	if (!data.nodes || data.nodes.length === 0)
