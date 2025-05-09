@@ -9,8 +9,8 @@ const {
 
 // const UPSTREAM_PROXIES = { 3000: { host: "127.0.0.1", port: 3002 } };
 const AUTH_PASSWORD = "password";
-// const TEN_GIGA_BYTES = 10 * 1024 ** 3;
-const TEN_GIGA_BYTES = 15728640;
+const TEN_GIGA_BYTES = 5 * 1024 ** 3;
+// const TEN_GIGA_BYTES = 15728640;
 
 function readOnce(socket) {
 	return new Promise((resolve) => socket.once("data", resolve));
