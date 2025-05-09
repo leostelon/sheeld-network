@@ -1,4 +1,4 @@
-const { IP } = require("../../constants");
+const { IP, SECRET } = require("../../constants");
 const { getCountryNameWithIp } = require("../../utils/geo");
 const { getNodes, saveNode, getBootNodes } = require("../../utils/network");
 
@@ -6,6 +6,10 @@ const router = require("express").Router();
 
 router.post("/join", async (req, res) => {
 	try {
+		if (!req.body.secret)
+			return res.status(404).send({ message: "Unauthorized!" });
+		if (SECRET !== req.body.secret)
+			return res.status(404).send({ message: "Invalid secret!" });
 		const port = req.body.port;
 		if (!port) return res.status(400).send("Send port number");
 
