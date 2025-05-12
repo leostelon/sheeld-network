@@ -14,6 +14,7 @@ function initializeGun(httpServer) {
 	gun = Gun({
 		web: httpServer,
 		peers,
+		file: "db/gun",
 	});
 }
 
