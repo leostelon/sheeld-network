@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 let { CLIENT_DIR } = require("../constants");
+const { getGun, gunPutObject } = require("../gun");
 const CLIENTS_FILE = path.join("db/clients.json");
 
 // Add or update a key
@@ -21,6 +22,9 @@ function addOrUpdateClientTarget(key, targetNode) {
 			received: 0,
 		};
 	}
+	const gun = getGun();
+	const node = gun.get("clients");
+	gunPutObject(node, data);
 	updateClientDirectory(data);
 
 	// Save updated data back to file
@@ -66,14 +70,28 @@ function updateClientDirectory(data) {
 }
 
 function updateClientInboundUsage(clientIp, usage) {
+	const gun = getGun();
 	const client = CLIENT_DIR.clients[clientIp];
 	client.usage.received += usage;
+	gun
+		.get("clients")
+		.get(clientIp)
+		.get("usage")
+		.get("received")
+		.put(client.usage.received);
 	updateClient(clientIp, "usage", client.usage);
 }
 
 function updateClientOutboundUsage(clientIp, usage) {
+	const gun = getGun();
 	const client = CLIENT_DIR.clients[clientIp];
 	client.usage.sent += usage;
+	gun
+		.get("clients")
+		.get(clientIp)
+		.get("usage")
+		.get("sent")
+		.put(client.usage.sent);
 	updateClient(clientIp, "usage", client.usage);
 }
 

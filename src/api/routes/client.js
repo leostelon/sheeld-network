@@ -7,6 +7,7 @@ const { verifyMessage } = require("../../utils/crypto");
 const router = require("express").Router();
 const axios = require("axios");
 const { getBootNodes } = require("../../utils/network");
+const { getGun, gunGetObject } = require("../../gun");
 
 router.post("/join", async (req, res) => {
 	try {
@@ -38,7 +39,7 @@ router.post("/join", async (req, res) => {
 			const last_paid = await fetchAndClientLastPaid(req.body.sol_address);
 			targetNode.last_paid = last_paid;
 		}
-		addOrUpdateClientTarget(clientIp, targetNode);
+		addOrUpdateClientTarget("192.168.18.99", targetNode);
 		res.send({ message: "OK" });
 	} catch (error) {
 		console.log(error);
@@ -61,14 +62,24 @@ router.get("/usage", async (req, res) => {
 
 router.get("/:sol_address", async (req, res) => {
 	try {
-		const sol_address = req.params.sol_address;
-		if (!sol_address)
-			return res.status(400).send("Client Sol address/signature is missing.");
+		let clientIp = req.socket.remoteAddress;
+		if (clientIp.startsWith("::ffff:")) {
+			clientIp = clientIp.slice(7);
+		}
+		const gun = getGun();
+		const node = gun.get("clients").get(clientIp);
 
-		const client = getClientWithSolAddress(sol_address);
-		if (!client) return res.status(404).send({ message: "No client found" });
+		gunGetObject(node).then((clientData) => {
+			res.send(clientData);
+		});
+		// const sol_address = req.params.sol_address;
+		// if (!sol_address)
+		// 	return res.status(400).send("Client Sol address/signature is missing.");
 
-		res.send(client);
+		// const client = getClientWithSolAddress(sol_address);
+		// if (!client) return res.status(404).send({ message: "No client found" });
+
+		// res.send(client);
 	} catch (error) {
 		console.log(error);
 	}

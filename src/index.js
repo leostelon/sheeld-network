@@ -10,6 +10,7 @@ const { connectToNetwork } = require("./utils/network");
 const { syncClientsDirectory } = require("./utils/clients");
 const { PORT } = require("./constants");
 const { initializeWebsocket } = require("./websocket");
+const { initializeGun } = require("./gun");
 
 app.use(express.json());
 // Create an HTTP server to handle requests and proxy them
@@ -46,7 +47,7 @@ async function initializeServer() {
 	// Start API port +1 on network port
 	const parsedPort = parseInt(PORT);
 	const networkPort = parsedPort + 1;
-	http.listen(networkPort, () => {
+	const httpServer = http.listen(networkPort, () => {
 		console.log("API Server running on port " + networkPort);
 	});
 
@@ -58,6 +59,7 @@ async function initializeServer() {
 	socks5Server.listen(PORT, "0.0.0.0", () => {
 		console.log("Node network running on port " + PORT);
 	});
+	initializeGun(httpServer);
 }
 
 initializeServer();
