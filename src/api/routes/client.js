@@ -39,7 +39,7 @@ router.post("/join", async (req, res) => {
 			const last_paid = await fetchAndClientLastPaid(req.body.sol_address);
 			targetNode.last_paid = last_paid;
 		}
-		addOrUpdateClientTarget("192.168.18.99", targetNode);
+		addOrUpdateClientTarget(clientIp, targetNode);
 		res.send({ message: "OK" });
 	} catch (error) {
 		console.log(error);
