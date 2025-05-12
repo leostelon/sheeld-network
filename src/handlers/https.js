@@ -6,6 +6,7 @@ const {
 	updateClientOutboundUsage,
 	updateClientInboundUsage,
 } = require("../utils/clients");
+const { getGun, gunGetObject } = require("../gun");
 
 // const UPSTREAM_PROXIES = { 3000: { host: "127.0.0.1", port: 3002 } };
 const AUTH_PASSWORD = "password";
@@ -257,19 +258,19 @@ function createSocks5Server() {
 		const remoteAddress = clientSocket.remoteAddress;
 
 		// Check for usage and expiration
-		const client = CLIENT_DIR.clients[remoteAddress];
-		if (
-			client &&
-			(client.usage.sent >= TEN_GIGA_BYTES ||
-				client.usage.received >= TEN_GIGA_BYTES)
-		) {
-			if (!client.last_paid || isPaidPlanExpired(client.last_paid)) {
-				clientSocket.destroy();
-				return;
+		getAsyncClient(remoteAddress).then((client) => {
+			if (
+				client &&
+				(client.usage.sent >= TEN_GIGA_BYTES ||
+					client.usage.received >= TEN_GIGA_BYTES)
+			) {
+				if (!client.last_paid || isPaidPlanExpired(client.last_paid)) {
+					clientSocket.destroy();
+					return;
+				}
 			}
-		}
-
-		handleSocksRequest(clientSocket, remoteAddress);
+			handleSocksRequest(clientSocket, remoteAddress);
+		});
 	});
 }
 
@@ -293,5 +294,18 @@ function isPaidPlanExpired(lastPaid) {
 	// Later, check if more than 30 days have passed
 	const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; // milliseconds in 30 days
 	return Date.now() > A + THIRTY_DAYS_MS; // true if more than 30 days passed
+}
+
+function getAsyncClient(ip) {
+	const gun = getGun();
+
+	return new Promise((resolve, reject) => {
+		try {
+			const node = gun.get("clients").get(ip);
+			gunGetObject(node).then(resolve);
+		} catch (err) {
+			reject(err);
+		}
+	});
 }
 module.exports = { createSocks5Server };
