@@ -67,4 +67,30 @@ function gunPutObject(gunNode, obj) {
 	}
 }
 
-module.exports = { initializeGun, getGun, gunGetObject, gunPutObject };
+function getAsyncNode(node) {
+	return new Promise((resolve, reject) => {
+		try {
+			gunGetObject(node).then(resolve);
+		} catch (err) {
+			reject(err);
+		}
+	});
+}
+
+function putAsyncNode(node, value) {
+	return new Promise((resolve, reject) => {
+		node.put(value, (ack) => {
+			if (ack.err) return reject(ack.err);
+			resolve(ack);
+		});
+	});
+}
+
+module.exports = {
+	initializeGun,
+	getGun,
+	gunGetObject,
+	gunPutObject,
+	getAsyncNode,
+	putAsyncNode,
+};

@@ -11,7 +11,7 @@ router.post("/balance", async (req, res) => {
 		const publicKey = new PublicKey(req.body.address);
 		const lamports = await connection.getBalance(publicKey);
 		const sol = lamports / 1e9;
-		const client = getClientWithSolAddress(req.body.address);
+		const client = await getClientWithSolAddress(req.body.address);
 		if (!client)
 			return res.send({
 				message: "No client found with provided wallet address",

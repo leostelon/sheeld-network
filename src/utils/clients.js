@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 let { CLIENT_DIR } = require("../constants");
-const { getGun, gunPutObject } = require("../gun");
+const { getGun, gunPutObject, getAsyncNode, putAsyncNode } = require("../gun");
 const CLIENTS_FILE = path.join("db/clients.json");
 
 // Add or update a key
@@ -42,15 +42,16 @@ function getClientTarget(key) {
 	return data[key] || null;
 }
 
-function getClients() {
-	if (!fs.existsSync(CLIENTS_FILE)) return {};
-	const data = fs.readFileSync(CLIENTS_FILE);
-	if (data.length === 0) return {};
-	return JSON.parse(data);
+async function getClients() {
+	const gun = getGun();
+	const node = gun.get("clients");
+	const clients = await getAsyncNode(node);
+	if (!clients) return {};
+	return clients;
 }
 
-function getClientWithSolAddress(solAddress) {
-	const clients = getClients();
+async function getClientWithSolAddress(solAddress) {
+	const clients = await getClients();
 	const ip = Object.keys(clients).find(
 		(ip) => clients[ip].sol_address === solAddress
 	);
@@ -59,9 +60,9 @@ function getClientWithSolAddress(solAddress) {
 	return clients[ip];
 }
 
-function syncClientsDirectory() {
+async function syncClientsDirectory() {
 	console.log("/// SYNCING CLIENTS STARTED ///");
-	CLIENT_DIR.clients = getClients();
+	CLIENT_DIR.clients = await getClients();
 	console.log("/// SYNCING CLIENTS ENDED ///");
 }
 
@@ -95,7 +96,10 @@ function updateClientOutboundUsage(clientIp, usage) {
 	updateClient(clientIp, "usage", client.usage);
 }
 
-function updateClientLastPaid(clientIp, last_paid) {
+async function updateClientLastPaid(clientIp, last_paid) {
+	const gun = getGun();
+	const node = gun.get("clients").get(clientIp).get("last_paid");
+	await putAsyncNode(node, last_paid);
 	updateClient(clientIp, "last_paid", last_paid);
 }
 

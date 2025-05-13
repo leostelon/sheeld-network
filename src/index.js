@@ -52,6 +52,7 @@ async function initializeServer() {
 	});
 
 	// SYNC
+	initializeGun(httpServer);
 	syncClientsDirectory();
 	await connectToNetwork(parsedPort);
 	initializeWebsocket(http);
@@ -59,7 +60,6 @@ async function initializeServer() {
 	socks5Server.listen(PORT, "0.0.0.0", () => {
 		console.log("Node network running on port " + PORT);
 	});
-	initializeGun(httpServer);
 }
 
 initializeServer();

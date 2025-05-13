@@ -62,24 +62,24 @@ router.get("/usage", async (req, res) => {
 
 router.get("/:sol_address", async (req, res) => {
 	try {
-		let clientIp = req.socket.remoteAddress;
-		if (clientIp.startsWith("::ffff:")) {
-			clientIp = clientIp.slice(7);
-		}
-		const gun = getGun();
-		const node = gun.get("clients").get(clientIp);
+		// let clientIp = req.socket.remoteAddress;
+		// if (clientIp.startsWith("::ffff:")) {
+		// 	clientIp = clientIp.slice(7);
+		// }
+		// const gun = getGun();
+		// const node = gun.get("clients").get(clientIp);
 
-		gunGetObject(node).then((clientData) => {
-			res.send(clientData);
-		});
-		// const sol_address = req.params.sol_address;
-		// if (!sol_address)
-		// 	return res.status(400).send("Client Sol address/signature is missing.");
+		// gunGetObject(node).then((clientData) => {
+		// 	res.send(clientData);
+		// });
+		const sol_address = req.params.sol_address;
+		if (!sol_address)
+			return res.status(400).send("Client Sol address/signature is missing.");
 
-		// const client = getClientWithSolAddress(sol_address);
-		// if (!client) return res.status(404).send({ message: "No client found" });
+		const client = await getClientWithSolAddress(sol_address);
+		if (!client) return res.status(404).send({ message: "No client found" });
 
-		// res.send(client);
+		res.send(client);
 	} catch (error) {
 		console.log(error);
 	}

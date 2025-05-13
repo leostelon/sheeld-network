@@ -16,13 +16,13 @@ router.post("/", async (req, res) => {
 		);
 		if (!walletTransfer) return res.status(200).send();
 
-		const client = getClientWithSolAddress(walletTransfer.fromUserAccount);
+		const client = await getClientWithSolAddress(walletTransfer.fromUserAccount);
 		if (!client) return res
 			.status(200)
 			.send({ message: "Client not found with." });
 
 		if (walletTransfer.amount < DEPOSIT_LAMPORTS) return res.status(200).send({ message: "Sent less than DEPOSIT_LAMPORTS." });
-		updateClientLastPaid(client.client_ip, transfers.timestamp);
+		await updateClientLastPaid(client.client_ip, transfers.timestamp);
 		return res.status(200).send({ message: "Updated successfully" });
 	} catch (error) {
 		console.log(error);
