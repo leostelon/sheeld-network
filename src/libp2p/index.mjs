@@ -5,19 +5,20 @@ import { yamux } from "@chainsafe/libp2p-yamux";
 import { bootstrap } from "@libp2p/bootstrap";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import { identify, identifyPush } from "@libp2p/identify";
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
+import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { PORT } from "../constants.js";
+import { db, initializeDB, readData, writeData } from "./db.mjs";
 
 // Known peers addresses
 const bootstrapMultiaddrs = [
-    "/ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWSFW5XScF2SkXTdkK4vbMANmB5LxtE5oLTHwAk5aJXyb1",
+    "/ip4/127.0.0.1/tcp/3002/ws/p2p/12D3KooWBkz2XwLtWMTaoCFnDzFssEXnvem5rhRvMcQhD2PbqhSq",
 ];
 
 const node = await createLibp2p({
     // libp2p nodes are started by default, pass false to override this
     start: false,
     addresses: {
-        listen: [`/ip4/127.0.0.1/tcp/${PORT}/ws`],
+        listen: [`/ip4/127.0.0.1/tcp/${PORT + 2}/ws`],
     },
     transports: [webSockets()],
     connectionEncrypters: [noise()],
@@ -35,6 +36,7 @@ const node = await createLibp2p({
 });
 
 // start libp2p
+await initializeDB();
 await node.start();
 console.log("libp2p has started");
 
@@ -57,15 +59,15 @@ node.addEventListener("peer:disconnect", (evt) => {
 });
 
 node.services.pubsub.addEventListener("message", (evt) => {
-    console.log(
-        `node2 received: ${uint8ArrayToString(evt.detail.data)} on topic ${
-            evt.detail.topic
-        }`
-    );
+    const data = uint8ArrayToString(evt.detail.data);
+    console.log(`node2 received: ${data} on topic ${evt.detail.topic}`);
+    const posts = readData("posts");
+    posts.push(data);
+    writeData();
 });
 node.services.pubsub.subscribe("fruit");
 
-if (PORT === "3002") {
+if (PORT === 3003) {
     setInterval(() => {
         console.log("publishing new message");
         node.services.pubsub.publish(
