@@ -6,13 +6,23 @@ import { bootstrap } from "@libp2p/bootstrap";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import { identify, identifyPush } from "@libp2p/identify";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
-import { PORT } from "../constants.js";
-import { db, initializeDB, readData, writeData } from "./db.mjs";
+import { BOOT_PEERS, IP, PORT } from "../constants.js";
+import {
+    db,
+    handleDbUpdate,
+    initializeDB,
+    saveNode,
+    syncDB,
+    updateDbSyncStatus,
+    updateNodeStatus,
+    writeData,
+} from "./db.mjs";
+import { getCountryNameWithIp } from "../utils/geo.js";
+import { formatPublishData } from "./util.mjs";
+import { DB_UPDATE, PEER_CONNECTION, PEER_STATUS } from "./event_types.mjs";
 
 // Known peers addresses
-const bootstrapMultiaddrs = [
-    "/ip4/127.0.0.1/tcp/3002/ws/p2p/12D3KooWBkz2XwLtWMTaoCFnDzFssEXnvem5rhRvMcQhD2PbqhSq",
-];
+const bootstrapMultiaddrs = BOOT_PEERS;
 
 const node = await createLibp2p({
     // libp2p nodes are started by default, pass false to override this
@@ -23,11 +33,14 @@ const node = await createLibp2p({
     transports: [webSockets()],
     connectionEncrypters: [noise()],
     streamMuxers: [yamux()],
-    peerDiscovery: [
-        bootstrap({
-            list: bootstrapMultiaddrs, // provide array of multiaddrs
-        }),
-    ],
+    peerDiscovery:
+        BOOT_PEERS.length === 0
+            ? []
+            : [
+                  bootstrap({
+                      list: bootstrapMultiaddrs, // provide array of multiaddrs
+                  }),
+              ],
     services: {
         pubsub: gossipsub(),
         identify: identify(),
@@ -35,44 +48,93 @@ const node = await createLibp2p({
     },
 });
 
-// start libp2p
-await initializeDB();
-await node.start();
-console.log("libp2p has started");
+async function initialize() {
+    // start libp2p
+    await initializeDB();
+    await node.start();
+    const listenAddresses = node.getMultiaddrs();
+    console.log(
+        "libp2p is listening on the following addresses: ",
+        listenAddresses
+    );
 
-const listenAddresses = node.getMultiaddrs();
-console.log(
-    "libp2p is listening on the following addresses: ",
-    listenAddresses
-);
+    // Push node to node list if it is the only node in the network
+    if (BOOT_PEERS.length === 0) {
+        db.data.nodes[node.peerId] = getCurrentNodeDetails();
+        updateDbSyncStatus(true);
+        await db.write();
+    }
 
-node.addEventListener("peer:discovery", (evt) => {
-    console.log("Discovered %s", evt.detail.id.toString()); // Log discovered peer
-});
+    // TOPIC SUBSCRIPTIONS
+    node.services.pubsub.subscribe(node.peerId.toString()); // Listen for unique events.
+    node.services.pubsub.subscribe(PEER_CONNECTION);
+    node.services.pubsub.subscribe(PEER_STATUS);
+    node.services.pubsub.subscribe(DB_UPDATE);
 
-node.addEventListener("peer:connect", (evt) => {
-    console.log("Connected to %s", evt.detail.toString()); // Log connected peer
-});
+    node.addEventListener("peer:discovery", (evt) => {
+        console.log("Discovered %s", evt.detail.id.toString()); // Log discovered peer
+    });
 
-node.addEventListener("peer:disconnect", (evt) => {
-    console.log("Disconnected from %s", evt.detail.toString()); // Log connected peer
-});
+    node.addEventListener("peer:connect", async (evt) => {
+        const peerId = evt.detail.toString();
+        console.log("Connected to", peerId); // Log connected peer
+        setTimeout(() => {
+            // Step 1: Publish entire DB to connected peer
+            node.services.pubsub.publish(peerId, formatPublishData(db.data), {
+                allowPublishToZeroTopicPeers: true,
+            });
+            // Step 2: Publish current node
+            const currentNode = getCurrentNodeDetails();
+            writeData(`nodes.${node.peerId.toString()}`, currentNode);
+        }, 3000);
+    });
 
-node.services.pubsub.addEventListener("message", (evt) => {
-    const data = uint8ArrayToString(evt.detail.data);
-    console.log(`node2 received: ${data} on topic ${evt.detail.topic}`);
-    const posts = readData("posts");
-    posts.push(data);
-    writeData();
-});
-node.services.pubsub.subscribe("fruit");
+    node.addEventListener("peer:disconnect", (evt) => {
+        const peerId = evt.detail.toString();
+        console.log("Disconnected from %s", peerId); // Log disconnected peer
+        publishNodeStatus(peerId, "disconnect");
+    });
 
-if (PORT === 3003) {
-    setInterval(() => {
-        console.log("publishing new message");
-        node.services.pubsub.publish(
-            "fruit",
-            new TextEncoder().encode("banana")
-        );
-    }, 3000);
+    node.services.pubsub.addEventListener("message", async (evt) => {
+        const s = uint8ArrayToString(evt.detail.data);
+        const topic = evt.detail.topic;
+        console.log("enter here", topic);
+
+        if (node.peerId.toString() === topic) {
+            const newData = JSON.parse(s);
+            await syncDB(newData);
+        } else if (PEER_CONNECTION === topic) {
+            const node = JSON.parse(s);
+            await saveNode(node.peerId, node);
+        } else if (PEER_STATUS === topic) {
+            const nodeDetails = JSON.parse(s);
+            await updateNodeStatus(nodeDetails.peerId, nodeDetails.status);
+        } else if (DB_UPDATE === topic) {
+            const { key, data } = JSON.parse(s);
+            await handleDbUpdate(key, data);
+        }
+    });
+}
+initialize();
+
+function publishNodeStatus(peerId, status) {
+    writeData(`nodes.${peerId}.status`, status);
+}
+
+function getCurrentNodeDetails() {
+    const location = getCountryNameWithIp(IP);
+    const currentNodeDetails = {
+        peerId: node.peerId,
+        ip: IP,
+        networkPort: PORT,
+        apiPort: PORT + 1,
+        joinedAt: Date.now(),
+        location,
+        status: "connect",
+    };
+    return currentNodeDetails;
+}
+
+export function getPubSubService() {
+    return node.services.pubsub;
 }
