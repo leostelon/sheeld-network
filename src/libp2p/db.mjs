@@ -25,7 +25,9 @@ export async function writeData(key, data) {
         return a[b];
     }, db.data);
     await db.write();
-    pubsub.publish(DB_UPDATE, formatPublishData({ key, data }));
+    pubsub.publish(DB_UPDATE, formatPublishData({ key, data }), {
+        allowPublishToZeroTopicPeers: true,
+    });
 }
 
 export async function handleDbUpdate(key, data) {
