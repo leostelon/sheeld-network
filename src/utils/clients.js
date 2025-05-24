@@ -1,8 +1,9 @@
 const fs = require("fs");
 const path = require("path");
 let { CLIENT_DIR } = require("../constants");
-const { writeData } = require("../libp2p/db.mjs");
 const CLIENTS_FILE = path.join("db/clients.json");
+
+let writeData;
 
 // Add or update a key
 function addOrUpdateClientTarget(key, targetNode) {
@@ -57,8 +58,10 @@ function getClientWithSolAddress(solAddress) {
     return clients[ip];
 }
 
-function syncClientsDirectory() {
+async function syncClientsDirectory() {
     console.log("/// SYNCING CLIENTS STARTED ///");
+	const { writeData: wd } = await import("../libp2p/db.mjs");
+	writeData = wd;
     CLIENT_DIR.clients = getClients();
     console.log("/// SYNCING CLIENTS ENDED ///");
 }
@@ -70,6 +73,7 @@ function updateClientDirectory(data) {
 function updateClientInboundUsage(clientIp, usage) {
     const client = CLIENT_DIR.clients[clientIp];
     client.usage.received += usage;
+	console.log(client.usage.received);
     writeData(`clients.${key}.usage.received`, client.usage.received);
     updateClient(clientIp, "usage", client.usage);
 }

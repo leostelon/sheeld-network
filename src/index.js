@@ -52,7 +52,7 @@ async function initializeServer() {
 	});
 
 	// SYNC
-	syncClientsDirectory();
+	await syncClientsDirectory();
 	await connectToNetwork(parsedPort);
 	initializeWebsocket(http);
 

@@ -219,7 +219,10 @@ async function chainToNextProxy(
 
 			// Track and forward outbound data (client → upstream)
 			client.on("data", (data) => {
-				updateClientOutboundUsage(remoteAddress, data.length);
+				updateClientOutboundUsage(
+					remoteAddress.replaceAll(".", "-"),
+					data.length
+				);
 				if (checkBalance(remoteAddress)) {
 					upstream.write(data);
 				} else {
@@ -230,7 +233,10 @@ async function chainToNextProxy(
 
 			// Track and forward inbound data (upstream → client)
 			upstream.on("data", (data) => {
-				updateClientInboundUsage(remoteAddress, data.length);
+				updateClientInboundUsage(
+					remoteAddress.replaceAll(".", "-"),
+					data.length
+				);
 				if (checkBalance(remoteAddress)) {
 					client.write(data);
 				} else {
