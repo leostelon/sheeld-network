@@ -48,7 +48,7 @@ const node = await createLibp2p({
     },
 });
 
-async function initializeLibp2p() {
+export async function initializeLibp2p() {
     // start libp2p
     await initializeDB();
     await node.start();
