@@ -48,7 +48,7 @@ const node = await createLibp2p({
     },
 });
 
-async function initialize() {
+async function initializeLibp2p() {
     // start libp2p
     await initializeDB();
     await node.start();
@@ -115,7 +115,6 @@ async function initialize() {
         }
     });
 }
-initialize();
 
 function publishNodeStatus(peerId, status) {
     writeData(`nodes.${peerId}.status`, status);

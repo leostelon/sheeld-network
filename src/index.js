@@ -39,7 +39,8 @@ const socks5Server = createSocks5Server();
 app.use(routes);
 
 async function initializeServer() {
-    await import("./libp2p/index.mjs");
+	const { initializeLibp2p } = await import("./libp2p/index.mjs");
+	await initializeLibp2p();
 	// Create DB path
 	createDirectory();
 
