@@ -24,6 +24,7 @@ import { DB_UPDATE, PEER_CONNECTION, PEER_STATUS } from "./event_types.mjs";
 
 // Known peers addresses
 const bootstrapMultiaddrs = BOOT_PEERS;
+let LIBP2P_INITIALIZED = false;
 
 const node = await createLibp2p({
     // libp2p nodes are started by default, pass false to override this
@@ -63,6 +64,7 @@ export async function initializeLibp2p() {
     if (BOOT_PEERS.length === 0) {
         db.data.nodes[node.peerId] = getCurrentNodeDetails();
         updateDbSyncStatus(true);
+        LIBP2P_INITIALIZED = true;
         await db.write();
     }
 
@@ -90,7 +92,8 @@ export async function initializeLibp2p() {
             if(dbSyncStatus) {
                 const currentNode = getCurrentNodeDetails();
                 writeData(`nodes.${node.peerId.toString()}`, currentNode);
-                timer.close()
+                LIBP2P_INITIALIZED = true;
+                timer.close();
             }
         }, 500);
     });
@@ -120,6 +123,8 @@ export async function initializeLibp2p() {
             await handleDbUpdate(key, data);
         }
     });
+
+    await waitUntilLibp2pInitialized();
 }
 
 function publishNodeStatus(peerId, status) {
@@ -142,4 +147,15 @@ function getCurrentNodeDetails() {
 
 export function getPubSubService() {
     return node.services.pubsub;
+}
+
+function waitUntilLibp2pInitialized() {
+    return new Promise((res) => {
+        const timer = setInterval(async () => {
+            if (LIBP2P_INITIALIZED) {
+                timer.close();
+                res(true);
+            }
+        }, 500);
+    });
 }
