@@ -72,7 +72,7 @@ async function handlePostAuthRequest(
 	uname,
 	passwd
 ) {
-	const UPSTREAM_PROXIES = CLIENT_DIR.clients;
+	const UPSTREAM_PROXY = CLIENT_DIR.clients[remoteAddress];
 	clientSocket.once("data", (request) => {
 		if (request[0] !== 0x05) {
 			console.error("Invalid SOCKS5 request");
@@ -97,8 +97,8 @@ async function handlePostAuthRequest(
 		console.log(`CONNECT to ${addr}:${port}`);
 
 		if (
-			!UPSTREAM_PROXIES[remoteAddress] ||
-			UPSTREAM_PROXIES[remoteAddress].ip === IP
+			!UPSTREAM_PROXY ||
+			UPSTREAM_PROXY.ip === IP
 		) {
 			const remoteSocket = net.connect(port, addr, () => {
 				// success reply
