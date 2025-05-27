@@ -9,6 +9,7 @@ import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { BOOT_PEERS, IP, PORT } from "../constants.js";
 import {
     db,
+    getDBSyncStatus,
     handleDbUpdate,
     initializeDB,
     saveNode,
@@ -18,7 +19,7 @@ import {
     writeData,
 } from "./db.mjs";
 import { getCountryNameWithIp } from "../utils/geo.js";
-import { formatPublishData } from "./util.mjs";
+import { formatPublishData, wait } from "./util.mjs";
 import { DB_UPDATE, PEER_CONNECTION, PEER_STATUS } from "./event_types.mjs";
 
 // Known peers addresses
@@ -78,15 +79,20 @@ export async function initializeLibp2p() {
     node.addEventListener("peer:connect", async (evt) => {
         const peerId = evt.detail.toString();
         console.log("Connected to", peerId); // Log connected peer
-        setTimeout(() => {
-            // Step 1: Publish entire DB to connected peer
-            node.services.pubsub.publish(peerId, formatPublishData(db.data), {
-                allowPublishToZeroTopicPeers: true,
-            });
-            // Step 2: Publish current node
-            const currentNode = getCurrentNodeDetails();
-            writeData(`nodes.${node.peerId.toString()}`, currentNode);
-        }, 3000);
+
+        await wait(3);
+        // Step 1: Publish entire DB to connected peer
+        await node.services.pubsub.publish(peerId, formatPublishData(db.data));
+
+        // Step 2: Publish current node
+        const timer = setInterval(async () => {
+            const dbSyncStatus = getDBSyncStatus();
+            if(dbSyncStatus) {
+                const currentNode = getCurrentNodeDetails();
+                writeData(`nodes.${node.peerId.toString()}`, currentNode);
+                timer.close()
+            }
+        }, 500);
     });
 
     node.addEventListener("peer:disconnect", (evt) => {

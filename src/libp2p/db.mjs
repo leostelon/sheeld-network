@@ -75,6 +75,10 @@ export async function syncDB(data) {
     await db.write();
 }
 
-export async function updateDbSyncStatus(status) {
+export function updateDbSyncStatus(status) {
     DB_SYNCED = status;
 }
+
+export function getDBSyncStatus() {
+    return DB_SYNCED;
+} 
