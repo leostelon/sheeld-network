@@ -72,7 +72,7 @@ async function handlePostAuthRequest(
 	uname,
 	passwd
 ) {
-	const UPSTREAM_PROXIES = CLIENT_DIR.clients;
+	const UPSTREAM_PROXY = CLIENT_DIR.clients[remoteAddress];
 	clientSocket.once("data", (request) => {
 		if (request[0] !== 0x05) {
 			console.error("Invalid SOCKS5 request");
@@ -97,8 +97,8 @@ async function handlePostAuthRequest(
 		console.log(`CONNECT to ${addr}:${port}`);
 
 		if (
-			!UPSTREAM_PROXIES[remoteAddress] ||
-			UPSTREAM_PROXIES[remoteAddress].ip === IP
+			!UPSTREAM_PROXY ||
+			UPSTREAM_PROXY.ip === IP
 		) {
 			const remoteSocket = net.connect(port, addr, () => {
 				// success reply
@@ -219,7 +219,10 @@ async function chainToNextProxy(
 
 			// Track and forward outbound data (client → upstream)
 			client.on("data", (data) => {
-				updateClientOutboundUsage(remoteAddress, data.length);
+				updateClientOutboundUsage(
+					remoteAddress.replaceAll(".", "-"),
+					data.length
+				);
 				if (checkBalance(remoteAddress)) {
 					upstream.write(data);
 				} else {
@@ -230,7 +233,10 @@ async function chainToNextProxy(
 
 			// Track and forward inbound data (upstream → client)
 			upstream.on("data", (data) => {
-				updateClientInboundUsage(remoteAddress, data.length);
+				updateClientInboundUsage(
+					remoteAddress.replaceAll(".", "-"),
+					data.length
+				);
 				if (checkBalance(remoteAddress)) {
 					client.write(data);
 				} else {
