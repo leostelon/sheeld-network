@@ -5,7 +5,7 @@ const { trimAddress } = require("../utils/address");
 const {
 	updateClientOutboundUsage,
 	updateClientInboundUsage,
-    getClient,
+	getClient,
 } = require("../utils/clients");
 
 // const UPSTREAM_PROXIES = { 3000: { host: "127.0.0.1", port: 3002 } };
@@ -219,10 +219,7 @@ async function chainToNextProxy(
 
 			// Track and forward outbound data (client → upstream)
 			client.on("data", (data) => {
-				updateClientOutboundUsage(
-					remoteAddress.replaceAll(".", "-"),
-					data.length
-				);
+				updateClientOutboundUsage(remoteAddress, data.length);
 				if (checkBalance(remoteAddress)) {
 					upstream.write(data);
 				} else {
@@ -233,10 +230,7 @@ async function chainToNextProxy(
 
 			// Track and forward inbound data (upstream → client)
 			upstream.on("data", (data) => {
-				updateClientInboundUsage(
-					remoteAddress.replaceAll(".", "-"),
-					data.length
-				);
+				updateClientInboundUsage(remoteAddress, data.length);
 				if (checkBalance(remoteAddress)) {
 					client.write(data);
 				} else {
@@ -280,7 +274,7 @@ function createSocks5Server() {
 }
 
 function checkBalance(userIpAddress) {
-	const client = CLIENT_DIR.clients[userIpAddress];
+	const client = getClient(userIpAddress);
 	if (!client) return false;
 
 	const overLimit =

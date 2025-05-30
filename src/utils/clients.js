@@ -46,7 +46,7 @@ async function syncClientsDirectory() {
 }
 
 function updateClientInboundUsage(clientIp, usage) {
-    const client = CLIENT_DIR.clients[clientIp];
+    const client = CLIENT_DIR.clients[clientIp.replaceAll(".", "-")];
     client.usage.received += usage;
     writeData(
         `clients.${clientIp.replaceAll(".", "-")}.usage.received`,
@@ -55,7 +55,7 @@ function updateClientInboundUsage(clientIp, usage) {
 }
 
 function updateClientOutboundUsage(clientIp, usage) {
-    const client = CLIENT_DIR.clients[clientIp];
+    const client = CLIENT_DIR.clients[clientIp.replaceAll(".", "-")];
     client.usage.sent += usage;
     writeData(
         `clients.${clientIp.replaceAll(".", "-")}.usage.sent`,
