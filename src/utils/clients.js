@@ -18,7 +18,12 @@ function addOrUpdateClientTarget(key, targetNode) {
 }
 
 function getClients() {
-    return readData("clients");
+    const clients = readData("clients");
+    return clients;
+}
+
+function getClient(remoteAddress) {
+    return CLIENT_DIR.clients[remoteAddress.replaceAll(".", "-")];
 }
 
 function getClientWithSolAddress(solAddress) {
@@ -33,33 +38,33 @@ function getClientWithSolAddress(solAddress) {
 
 async function syncClientsDirectory() {
     console.log("/// SYNCING CLIENTS STARTED ///");
-	const { writeData: wd, readData: rd } = await import("../libp2p/db.mjs");
-	writeData = wd;
-	readData = rd;
+    const { writeData: wd, readData: rd } = await import("../libp2p/db.mjs");
+    writeData = wd;
+    readData = rd;
     CLIENT_DIR.clients = getClients();
     console.log("/// SYNCING CLIENTS ENDED ///");
 }
 
 function updateClientInboundUsage(clientIp, usage) {
-    const client = CLIENT_DIR.clients[clientIp];
+    const client = CLIENT_DIR.clients[clientIp.replaceAll(".", "-")];
     client.usage.received += usage;
     writeData(
-		`clients.${clientIp.replaceAll(".", "-")}.usage.received`,
-		client.usage.received
-	);
+        `clients.${clientIp.replaceAll(".", "-")}.usage.received`,
+        client.usage.received
+    );
 }
 
 function updateClientOutboundUsage(clientIp, usage) {
-    const client = CLIENT_DIR.clients[clientIp];
+    const client = CLIENT_DIR.clients[clientIp.replaceAll(".", "-")];
     client.usage.sent += usage;
     writeData(
-		`clients.${clientIp.replaceAll(".", "-")}.usage.sent`,
-		client.usage.sent
-	);
+        `clients.${clientIp.replaceAll(".", "-")}.usage.sent`,
+        client.usage.sent
+    );
 }
 
 function updateClientLastPaid(clientIp, last_paid) {
-	throw new Error("Client payment not implemented!")
+    throw new Error("Client payment not implemented!");
 }
 
 module.exports = {
@@ -69,4 +74,5 @@ module.exports = {
     updateClientOutboundUsage,
     getClientWithSolAddress,
     updateClientLastPaid,
+    getClient
 };

@@ -30,7 +30,7 @@ const node = await createLibp2p({
     // libp2p nodes are started by default, pass false to override this
     start: false,
     addresses: {
-        listen: [`/ip4/127.0.0.1/tcp/${PORT + 2}/ws`],
+        listen: [`/ip4/0.0.0.0/tcp/${PORT + 2}/ws`],
     },
     transports: [webSockets()],
     connectionEncrypters: [noise()],
