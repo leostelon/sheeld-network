@@ -6,7 +6,7 @@ let writeData, readData;
 
 function getNodes() {
 	const nodesObj = readData("nodes");
-	return Object.keys(nodesObj).map((key) => [key, nodesObj[key]]);
+	return Object.keys(nodesObj).map((key) => nodesObj[key]);
 }
 
 function getBootNodes() {
