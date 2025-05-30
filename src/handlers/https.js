@@ -1,6 +1,6 @@
 const net = require("net");
 const { getNetDetails } = require("./utils/getNetDetails");
-const { CLIENT_DIR, IP } = require("../constants");
+const { IP, PORT } = require("../constants");
 const { trimAddress } = require("../utils/address");
 const {
 	updateClientOutboundUsage,
@@ -10,8 +10,8 @@ const {
 
 // const UPSTREAM_PROXIES = { 3000: { host: "127.0.0.1", port: 3002 } };
 const AUTH_PASSWORD = "password";
-// const TEN_GIGA_BYTES = 10 * 1024 ** 3;
-const TEN_GIGA_BYTES = 15728640;
+const TEN_GIGA_BYTES = 10 * 1024 ** 3;
+// const TEN_GIGA_BYTES = 15728640;
 
 function readOnce(socket) {
 	return new Promise((resolve) => socket.once("data", resolve));
@@ -99,7 +99,7 @@ async function handlePostAuthRequest(
 
 		if (
 			!UPSTREAM_PROXY ||
-			UPSTREAM_PROXY.ip === IP
+			(UPSTREAM_PROXY.ip === IP && UPSTREAM_PROXY.ip === PORT)
 		) {
 			const remoteSocket = net.connect(port, addr, () => {
 				// success reply
