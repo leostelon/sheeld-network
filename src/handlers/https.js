@@ -1,15 +1,16 @@
 const net = require("net");
 const { getNetDetails } = require("./utils/getNetDetails");
-const { CLIENT_DIR, IP } = require("../constants");
+const { IP, PORT } = require("../constants");
 const { trimAddress } = require("../utils/address");
 const {
 	updateClientOutboundUsage,
 	updateClientInboundUsage,
+	getClient,
 } = require("../utils/clients");
 
 // const UPSTREAM_PROXIES = { 3000: { host: "127.0.0.1", port: 3002 } };
 const AUTH_PASSWORD = "password";
-const TEN_GIGA_BYTES = 5 * 1024 ** 3;
+const TEN_GIGA_BYTES = 10 * 1024 ** 3;
 // const TEN_GIGA_BYTES = 15728640;
 
 function readOnce(socket) {
@@ -72,7 +73,7 @@ async function handlePostAuthRequest(
 	uname,
 	passwd
 ) {
-	const UPSTREAM_PROXY = CLIENT_DIR.clients[remoteAddress];
+	const UPSTREAM_PROXY = getClient(remoteAddress);
 	clientSocket.once("data", (request) => {
 		if (request[0] !== 0x05) {
 			console.error("Invalid SOCKS5 request");
@@ -98,7 +99,7 @@ async function handlePostAuthRequest(
 
 		if (
 			!UPSTREAM_PROXY ||
-			UPSTREAM_PROXY.ip === IP
+			(UPSTREAM_PROXY.ip === IP && UPSTREAM_PROXY.ip === PORT)
 		) {
 			const remoteSocket = net.connect(port, addr, () => {
 				// success reply
@@ -136,8 +137,7 @@ async function chainToNextProxy(
 	uname,
 	pass
 ) {
-	const UPSTREAM_PROXIES = CLIENT_DIR.clients;
-	const proxy = UPSTREAM_PROXIES[remoteAddress];
+	const proxy = getClient(remoteAddress);
 	const upstreamProxyIp = trimAddress(proxy.ip);
 	const upstream = net.connect(proxy.networkPort, upstreamProxyIp, async () => {
 		try {
@@ -219,10 +219,7 @@ async function chainToNextProxy(
 
 			// Track and forward outbound data (client → upstream)
 			client.on("data", (data) => {
-				updateClientOutboundUsage(
-					remoteAddress.replaceAll(".", "-"),
-					data.length
-				);
+				updateClientOutboundUsage(remoteAddress, data.length);
 				if (checkBalance(remoteAddress)) {
 					upstream.write(data);
 				} else {
@@ -233,10 +230,7 @@ async function chainToNextProxy(
 
 			// Track and forward inbound data (upstream → client)
 			upstream.on("data", (data) => {
-				updateClientInboundUsage(
-					remoteAddress.replaceAll(".", "-"),
-					data.length
-				);
+				updateClientInboundUsage(remoteAddress, data.length);
 				if (checkBalance(remoteAddress)) {
 					client.write(data);
 				} else {
@@ -259,11 +253,11 @@ async function chainToNextProxy(
 
 function createSocks5Server() {
 	return net.createServer((clientSocket) => {
-		console.log("New connection from", clientSocket.remoteAddress);
 		const remoteAddress = clientSocket.remoteAddress;
+		console.log("New connection from", remoteAddress);
 
 		// Check for usage and expiration
-		const client = CLIENT_DIR.clients[remoteAddress];
+		const client = getClient(remoteAddress);
 		if (
 			client &&
 			(client.usage.sent >= TEN_GIGA_BYTES ||
@@ -280,7 +274,7 @@ function createSocks5Server() {
 }
 
 function checkBalance(userIpAddress) {
-	const client = CLIENT_DIR.clients[userIpAddress];
+	const client = getClient(userIpAddress);
 	if (!client) return false;
 
 	const overLimit =
