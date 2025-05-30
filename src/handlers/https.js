@@ -5,6 +5,7 @@ const { trimAddress } = require("../utils/address");
 const {
 	updateClientOutboundUsage,
 	updateClientInboundUsage,
+    getClient,
 } = require("../utils/clients");
 
 // const UPSTREAM_PROXIES = { 3000: { host: "127.0.0.1", port: 3002 } };
@@ -72,7 +73,7 @@ async function handlePostAuthRequest(
 	uname,
 	passwd
 ) {
-	const UPSTREAM_PROXY = CLIENT_DIR.clients[remoteAddress];
+	const UPSTREAM_PROXY = getClient(remoteAddress);
 	clientSocket.once("data", (request) => {
 		if (request[0] !== 0x05) {
 			console.error("Invalid SOCKS5 request");
@@ -136,8 +137,7 @@ async function chainToNextProxy(
 	uname,
 	pass
 ) {
-	const UPSTREAM_PROXIES = CLIENT_DIR.clients;
-	const proxy = UPSTREAM_PROXIES[remoteAddress];
+	const proxy = getClient(remoteAddress);
 	const upstreamProxyIp = trimAddress(proxy.ip);
 	const upstream = net.connect(proxy.networkPort, upstreamProxyIp, async () => {
 		try {
@@ -259,11 +259,11 @@ async function chainToNextProxy(
 
 function createSocks5Server() {
 	return net.createServer((clientSocket) => {
-		console.log("New connection from", clientSocket.remoteAddress);
 		const remoteAddress = clientSocket.remoteAddress;
+		console.log("New connection from", remoteAddress);
 
 		// Check for usage and expiration
-		const client = CLIENT_DIR.clients[remoteAddress];
+		const client = getClient(remoteAddress);
 		if (
 			client &&
 			(client.usage.sent >= TEN_GIGA_BYTES ||
