@@ -5,7 +5,8 @@ const { NETWORK, SECRET } = require("../constants");
 let writeData, readData;
 
 function getNodes() {
-	return readData("nodes");
+	const nodesObj = readData("nodes");
+	return Object.keys(nodesObj).map((key) => [key, nodesObj[key]]);
 }
 
 function getBootNodes() {
